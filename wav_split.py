@@ -6,6 +6,7 @@ import wave
 import json
 import uuid
 import argparse
+from time import perf_counter
 
 def main(args):
 
@@ -44,10 +45,20 @@ def convert_wav_to_mono(wave_file):
     # Samples are placed end-to-end to form the data. 
     # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
     
+    # Keep track of time required to make the conversion
+    start_time = perf_counter()
+
     while wave_file.tell() < wave_file.getnframes():
         wave_file.setpos(wave_file.tell() + 1) # skip a frame
-        mono_wave.writeframes(wave_file.readframes(1))
+        # It is best to first set all parameters, perhaps possibly the
+        # compression type, and then write audio frames using writeframesraw.
+        # When all frames have been written, either call writeframes(b'') or
+        # close() to patch up the sizes in the header.
+        mono_wave.writeframesraw(wave_file.readframes(1))
     mono_wave.close() # done writing to this thing, have to create a Wave_read object later
+
+    print("Conversion completed in: ", perf_counter() - start_time, "seconds")
+
     return mono_wave_file_name
 
 if __name__ == '__main__':
