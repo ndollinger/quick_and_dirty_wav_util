@@ -48,8 +48,8 @@ def convert_wav_to_mono(wave_file):
     # Keep track of time required to make the conversion
     start_time = perf_counter()
 
-    while wave_file.tell() < wave_file.getnframes():
-        wave_file.setpos(wave_file.tell() + 1) # skip a frame
+    for sound_pos in range(0,wave_file.getnframes(),2):
+        wave_file.setpos(sound_pos)
         # It is best to first set all parameters, perhaps possibly the
         # compression type, and then write audio frames using writeframesraw.
         # When all frames have been written, either call writeframes(b'') or
