@@ -9,12 +9,13 @@ import argparse
 from time import perf_counter
 
 def main(args):
-
-    # TODO: reimplement this using argparse, I don't recall why I took this out
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("wav_file", help="File Name of Wav file to translate")
-    # parser.parse_args()
-    wav_file_name = sys.argv[1]
+    """Split the Wave."""
+    parser = argparse.ArgumentParser(description='Create a Mono .wav from a Stereo .wav')
+    parser.add_argument("wav_file", 
+                        help="File Name of Wav file to translate",
+                        type=str)
+    args = parser.parse_args()
+    wav_file_name = args.wav_file
 
     wf = wave.open(wav_file_name, "rb")
     # check for non-mono wavs and convert them, else output message
@@ -22,12 +23,13 @@ def main(args):
         temp_wave_file_name = convert_wav_to_mono(wf)
         print ("Converted to " + temp_wave_file_name)
     else:
-        print (wav_file_name + "wav is already mono")
+        print (wav_file_name + " wav is already mono")
 
 
 # There is surely a better way to do this than the below.
 # Looping through all the frames is needlessly slow
 def convert_wav_to_mono(wave_file):
+    """convert_wav_to_mono."""
     # only going to keep one of the channels
     # TODO: Make it configurable which channel to keep
 
