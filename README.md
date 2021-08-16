@@ -8,14 +8,14 @@ Currently the following operations are supported:
 
 ## Usage
 
-usage: wav_split.py [-h] wav_file
+*usage:* wav_split.py [-h] wav_file
 
 Create a Mono .wav from a Stereo .wav
 
-positional arguments:
+*positional arguments:*
   wav_file    File Name of Wav file to translate
 
-optional arguments:
+*optional arguments:*
   -h, --help  show this help message and exit
 
 ## Prerequisites
