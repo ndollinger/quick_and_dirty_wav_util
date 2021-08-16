@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-import os
 import wave
-import json
 import uuid
 import argparse
 from time import perf_counter
@@ -24,7 +22,7 @@ def main(args):
         print ("Converted to " + temp_wave_file_name)
     else:
         print (wav_file_name + " wav is already mono")
-
+    wf.close
 
 # There is surely a better way to do this than the below.
 # Looping through all the frames is needlessly slow
@@ -47,6 +45,8 @@ def convert_wav_to_mono(wave_file):
     # Samples are placed end-to-end to form the data. 
     # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
     
+    mono_wave_bytes = bytearray()
+
     # Keep track of time required to make the conversion
     start_time = perf_counter()
 
@@ -56,7 +56,8 @@ def convert_wav_to_mono(wave_file):
         # compression type, and then write audio frames using writeframesraw.
         # When all frames have been written, either call writeframes(b'') or
         # close() to patch up the sizes in the header.
-        mono_wave.writeframesraw(wave_file.readframes(1))
+        mono_wave_bytes += bytearray(wave_file.readframes(1))
+    mono_wave.writeframesraw(mono_wave_bytes)
     mono_wave.close() # done writing to this thing, have to create a Wave_read object later
 
     print("Conversion completed in: ", perf_counter() - start_time, "seconds")
