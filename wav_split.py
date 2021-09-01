@@ -1,3 +1,10 @@
+"""wav_split.py.
+
+Converts a Stereo wav into a mono wav.
+
+One channel is discarded
+
+"""
 #!/usr/bin/env python3
 
 import sys
@@ -17,18 +24,29 @@ def main(args):
 
     wf = wave.open(wav_file_name, "rb")
     # check for non-mono wavs and convert them, else output message
-    if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getcomptype() != "NONE":
+    if can_be_split(wf):
         temp_wave_file_name = convert_wav_to_mono(wf)
         print ("Converted to " + temp_wave_file_name)
     else:
         print (wav_file_name + " wav is already mono")
     wf.close
 
+def can_be_split(wf: wave.Wave_read) -> bool:
+    """Detrmine if a Wave_read object can be split into multiple channels."""
+    if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getcomptype() != "NONE":
+        return True
+    else:
+        return False
+
 # There is surely a better way to do this than the below.
 # Looping through all the frames is needlessly slow
 def convert_wav_to_mono(wave_file):
     """convert_wav_to_mono."""
     # only going to keep one of the channels
+
+    print(f'There are {wave_file.getsampwidth()} bytes per sample in this wave')
+    print(f'The sampling frequency is {wave_file.getframerate()}')
+
     # TODO: Make it configurable which channel to keep
 
     mono_wave_file_name = str(uuid.uuid4().int) + ".wav"
@@ -36,6 +54,12 @@ def convert_wav_to_mono(wave_file):
     params = wave_file.getparams()
     mono_wave.setparams(params)
     mono_wave.setnchannels(1)
+    #mono_wave.setsampwidth(int(wave_file.getsampwidth()/2))
+    mono_wave.setsampwidth(2)
+
+
+    # Wav file references
+    # https://wavefilegem.com/how_wave_files_work.html
 
     # The data is the individual samples. An individual sample is the bit size times the number of channels. 
     # For example, a monaural (single channel), eight bit recording has an individual sample size of 8 bits. 
@@ -56,7 +80,9 @@ def convert_wav_to_mono(wave_file):
         # compression type, and then write audio frames using writeframesraw.
         # When all frames have been written, either call writeframes(b'') or
         # close() to patch up the sizes in the header.
-        mono_wave_bytes += bytearray(wave_file.readframes(1))
+        single_frame = wave_file.readframes(1)
+        mono_frame = single_frame[0:2] # ignore the samples from the second channel? (maybe this should be 0 + 1?)
+        mono_wave_bytes += bytearray(single_frame)
     mono_wave.writeframesraw(mono_wave_bytes)
     mono_wave.close() # done writing to this thing, have to create a Wave_read object later
 
