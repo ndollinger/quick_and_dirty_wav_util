@@ -11,21 +11,18 @@ import sys
 import wave
 import uuid
 import argparse
+import os
 from time import perf_counter
 
-def main(args):
+def main(wav_file_name, output_directory):
     """Split the Wave."""
-    parser = argparse.ArgumentParser(description='Create a Mono .wav from a Stereo .wav')
-    parser.add_argument("wav_file", 
-                        help="File Name of Wav file to translate",
-                        type=str)
-    args = parser.parse_args()
-    wav_file_name = args.wav_file
-
-    wf = wave.open(wav_file_name, "rb")
+    try:
+        wf = wave.open(wav_file_name, "rb")
+    except wave.Error as wave_except:
+        print(f'Error Opening {wav_file_name} : {str(wave_except)}', file=sys.stderr)
     # check for non-mono wavs and convert them, else output message
     if can_be_split(wf):
-        temp_wave_file_name = convert_wav_to_mono(wf)
+        temp_wave_file_name = convert_wav_to_mono(wf, output_directory)
         print ("Converted to " + temp_wave_file_name)
     else:
         print (wav_file_name + " wav is already mono")
@@ -40,7 +37,7 @@ def can_be_split(wf: wave.Wave_read) -> bool:
 
 # There is surely a better way to do this than the below.
 # Looping through all the frames is needlessly slow
-def convert_wav_to_mono(wave_file):
+def convert_wav_to_mono(wave_file, output_directory):
     """convert_wav_to_mono."""
     # only going to keep one of the channels
 
@@ -50,12 +47,12 @@ def convert_wav_to_mono(wave_file):
     # TODO: Make it configurable which channel to keep
 
     mono_wave_file_name = str(uuid.uuid4().int) + ".wav"
-    mono_wave = wave.open(mono_wave_file_name,"wb")
+    mono_wave = wave.open(f'{output_directory}/{mono_wave_file_name}',"wb")
     params = wave_file.getparams()
     mono_wave.setparams(params)
     mono_wave.setnchannels(1)
     #mono_wave.setsampwidth(int(wave_file.getsampwidth()/2))
-    mono_wave.setsampwidth(2)
+    #mono_wave.setsampwidth(2)
 
 
     # Wav file references
@@ -90,5 +87,25 @@ def convert_wav_to_mono(wave_file):
 
     return mono_wave_file_name
 
+def create_output_dir(output_dir: str):
+    """Create a dir to output generated waves if it doesn't already exist."""
+    try:
+        os.mkdir(output_dir)
+    except FileExistsError:
+        pass # This is kind of expected, maybe do something clever eventually
+
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    default_output_dir = "generated_waves"
+    parser = argparse.ArgumentParser(description='Create a Mono .wav from a Stereo .wav')
+    parser.add_argument("wav_file", 
+                        help="File Name of Wav file to translate",
+                        type=str)
+    parser.add_argument("--output_directory",
+                       help="Directory to output split wave file to",
+                       type=str, 
+                       default=default_output_dir)
+    args = parser.parse_args()
+    wav_file_name = args.wav_file
+    output_dir = args.output_directory
+    create_output_dir(output_dir)
+    main(wav_file_name, output_dir)
