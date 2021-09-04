@@ -51,8 +51,8 @@ def convert_wav_to_mono(wave_file, output_directory):
     params = wave_file.getparams()
     mono_wave.setparams(params)
     mono_wave.setnchannels(1)
-    #mono_wave.setsampwidth(int(wave_file.getsampwidth()/2))
-    #mono_wave.setsampwidth(2)
+    mono_wave.setsampwidth(2)
+    mono_wave.setframerate(int(wave_file.getframerate()/2))
 
 
     # Wav file references
@@ -71,7 +71,9 @@ def convert_wav_to_mono(wave_file, output_directory):
     # Keep track of time required to make the conversion
     start_time = perf_counter()
 
-    for sound_pos in range(0,wave_file.getnframes(),2):
+    #for sound_pos in range(0,wave_file.getnframes(),2):
+    for sound_pos in range(0,wave_file.getnframes(),2): # each frame has data from both channels, so don't skip any
+
         wave_file.setpos(sound_pos)
         # It is best to first set all parameters, perhaps possibly the
         # compression type, and then write audio frames using writeframesraw.
@@ -79,7 +81,9 @@ def convert_wav_to_mono(wave_file, output_directory):
         # close() to patch up the sizes in the header.
         single_frame = wave_file.readframes(1)
         mono_frame = single_frame[0:2] # ignore the samples from the second channel? (maybe this should be 0 + 1?)
-        mono_wave_bytes += bytearray(single_frame)
+        #mono_wave_bytes += bytearray(single_frame)
+        mono_wave_bytes += bytearray(mono_frame)
+
     mono_wave.writeframesraw(mono_wave_bytes)
     mono_wave.close() # done writing to this thing, have to create a Wave_read object later
 
