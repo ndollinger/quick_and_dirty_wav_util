@@ -13,6 +13,8 @@ import uuid
 import argparse
 import os
 from time import perf_counter
+from functools import reduce
+from wave_channel import wav_channel_reader
 
 def main(wav_file_name, output_directory):
     """Split the Wave."""
@@ -51,7 +53,7 @@ def convert_wav_to_mono(wave_file, output_directory):
     params = wave_file.getparams()
     mono_wave.setparams(params)
     mono_wave.setnchannels(1)
-    mono_wave.setsampwidth(2)
+    mono_wave.setsampwidth(2) # TODO: this is not _always_ going to be the case
     mono_wave.setframerate(int(wave_file.getframerate()/2))
 
 
@@ -66,11 +68,21 @@ def convert_wav_to_mono(wave_file, output_directory):
     # Samples are placed end-to-end to form the data. 
     # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
     
-    mono_wave_bytes = bytearray()
-
     # Keep track of time required to make the conversion
     start_time = perf_counter()
+ 
+    mono_wave_bytes = alt_get_one_channel(wave_file)
 
+    mono_wave.writeframesraw(mono_wave_bytes)
+    mono_wave.close() # done writing to this thing, have to create a Wave_read object later
+
+    print("Conversion completed in: ", perf_counter() - start_time, "seconds")
+
+    return mono_wave_file_name
+
+def get_one_channel(wave_file: wave.Wave_read) -> bytearray:
+    """Do the actual job of splitting out one channel."""
+    mono_wave_bytes = bytearray()
     #for sound_pos in range(0,wave_file.getnframes(),2):
     for sound_pos in range(0,wave_file.getnframes(),2): # each frame has data from both channels, so don't skip any
 
@@ -81,15 +93,20 @@ def convert_wav_to_mono(wave_file, output_directory):
         # close() to patch up the sizes in the header.
         single_frame = wave_file.readframes(1)
         mono_frame = single_frame[0:2] # ignore the samples from the second channel? (maybe this should be 0 + 1?)
+        #print(mono_frame)
         #mono_wave_bytes += bytearray(single_frame)
         mono_wave_bytes += bytearray(mono_frame)
+    return mono_wave_bytes  
 
-    mono_wave.writeframesraw(mono_wave_bytes)
-    mono_wave.close() # done writing to this thing, have to create a Wave_read object later
-
-    print("Conversion completed in: ", perf_counter() - start_time, "seconds")
-
-    return mono_wave_file_name
+def alt_get_one_channel(wave_file: wave.Wave_read) -> bytearray:
+    """Do the actual job of splitting out one channel."""
+    mono_wave_bytes = bytearray()
+    channel=wav_channel_reader(wave_file, 1)
+    for data_bytes in channel:
+        mono_wave_bytes += data_bytes
+        #print(data_bytes)
+    mono_wave_bytes += b'\x01' # TODO Padding byte if M*Nc*Ns is odd, else 0
+    return mono_wave_bytes 
 
 def create_output_dir(output_dir: str):
     """Create a dir to output generated waves if it doesn't already exist."""
