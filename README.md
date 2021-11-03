@@ -8,7 +8,7 @@ Currently, the following operations are supported:
 
 ## Usage
 
-```Shell
+```console
 usage: wav_split.py [-h] [--output_directory OUTPUT_DIRECTORY] [--output_file_name OUTPUT_FILE_NAME] wav_file
 
 Create a Mono .wav from a Stereo .wav

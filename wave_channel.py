@@ -1,11 +1,53 @@
 """Classes and Method to evaluate and manipulate the channels of wave files.
 
 Classes:
-
     wav_channel_reader
+
+Methods:
+    convert_wave_to_mono
+    get_one_channel
+
 """
 
 import wave
+from time import perf_counter
+
+def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str):
+    """convert_wav_to_mono."""
+    # only going to keep one of the channels
+
+    print(f'There are {wave_file.getsampwidth()} bytes per sample in this wave')
+    print(f'The sampling frequency is {wave_file.getframerate()}')
+
+    # TODO: Make it configurable which channel to keep
+
+    mono_wave = wave.open(f'{output_directory}/{mono_wave_file_name}',"wb")
+    params = wave_file.getparams()
+    mono_wave.setparams(params)
+    mono_wave.setnchannels(1)
+    mono_wave.setsampwidth(2) # TODO: this is not _always_ going to be the case
+    mono_wave.setframerate(int(wave_file.getframerate()/2))
+    
+    # Keep track of time required to make the conversion
+    start_time = perf_counter()
+ 
+    mono_wave_bytes = get_one_channel(wave_file)
+
+    mono_wave.writeframesraw(mono_wave_bytes)
+    mono_wave.close() # done writing to this thing, have to create a Wave_read object later
+
+    print("Conversion completed in: ", perf_counter() - start_time, "seconds")
+
+    return mono_wave_file_name
+
+def get_one_channel(wave_file: wave.Wave_read) -> bytearray:
+    """Do the actual job of splitting out one channel."""
+    mono_wave_bytes = bytearray()
+    channel=wav_channel_reader(wave_file, 1)
+    for data_bytes in channel:
+        mono_wave_bytes += data_bytes
+    mono_wave_bytes += b'\x01' # TODO Padding byte if M*Nc*Ns is odd, else 0
+    return mono_wave_bytes 
 
 class wav_channel_reader:
     """Wave Channel Reader.
@@ -38,7 +80,6 @@ class wav_channel_reader:
 
     def __iter__(self):
         """Yield the next byte from the channel."""
-
         # Wav file references
         # https://wavefilegem.com/how_wave_files_work.html
 
