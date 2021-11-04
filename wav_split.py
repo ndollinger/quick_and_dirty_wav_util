@@ -14,7 +14,7 @@ import argparse
 import os
 from wave_channel import wav_channel_reader, convert_wav_to_mono
 
-def main(wav_file_name, output_directory, output_file_name):
+def main(wav_file_name, output_directory, output_file_name, channel):
     """Split the Wave."""
     try:
         wf = wave.open(wav_file_name, "rb")
@@ -22,7 +22,7 @@ def main(wav_file_name, output_directory, output_file_name):
         print(f'Error Opening {wav_file_name} : {str(wave_except)}', file=sys.stderr)
     # check for non-mono wavs and convert them, else output message
     if can_be_split(wf):
-        convert_wav_to_mono(wf, output_directory, output_file_name)
+        convert_wav_to_mono(wf, output_directory, output_file_name, channel)
         print ("Converted to " + output_file_name)
     else:
         print (wav_file_name + " wav is already mono")
@@ -57,6 +57,10 @@ if __name__ == '__main__':
                         help="File name of the newly created mono wave file",
                         type=str,
                         default=str(uuid.uuid4().int) + ".wav")
+    parser.add_argument("--channel",
+                       help="which channel to keep",
+                       type=int, 
+                       default=1)
     args = parser.parse_args()
     create_output_dir(args.output_directory)
-    main(args.wav_file, args.output_directory, args.output_file_name)
+    main(args.wav_file, args.output_directory, args.output_file_name, args.channel)

@@ -9,7 +9,7 @@ Currently, the following operations are supported:
 ## Usage
 
 ```console
-usage: wav_split.py [-h] [--output_directory OUTPUT_DIRECTORY] [--output_file_name OUTPUT_FILE_NAME] wav_file
+usage: wav_split.py [-h] [--output_directory OUTPUT_DIRECTORY] [--output_file_name OUTPUT_FILE_NAME] [--channel CHANNEL] wav_file
 
 Create a Mono .wav from a Stereo .wav
 
@@ -22,6 +22,7 @@ optional arguments:
                         Directory where split wave files end up
   --output_file_name OUTPUT_FILE_NAME, -o OUTPUT_FILE_NAME
                         File name of the newly created mono wave file
+  --channel CHANNEL     which channel to keep
 ```
 
 ## Prerequisites

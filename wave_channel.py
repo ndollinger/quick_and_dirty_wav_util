@@ -11,8 +11,9 @@ Methods:
 
 import wave
 from time import perf_counter
+import os
 
-def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str):
+def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str, channel_num: int):
     """convert_wav_to_mono."""
     # only going to keep one of the channels
 
@@ -21,29 +22,34 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
 
     # TODO: Make it configurable which channel to keep
 
-    mono_wave = wave.open(f'{output_directory}/{mono_wave_file_name}',"wb")
-    params = wave_file.getparams()
-    mono_wave.setparams(params)
-    mono_wave.setnchannels(1)
-    mono_wave.setsampwidth(2) # TODO: this is not _always_ going to be the case
-    mono_wave.setframerate(int(wave_file.getframerate()/2))
+    # This is an extremely large `try` block, but once the `wave.open` runs it will create a new file on disk which we don't want to be there in the case something goes wrong writing the bytes etc.
+    try:
+        mono_wave = wave.open(f'{output_directory}/{mono_wave_file_name}',"wb")
+        params = wave_file.getparams()
+        mono_wave.setparams(params)
+        mono_wave.setnchannels(1)
+        mono_wave.setsampwidth(2) # TODO: this is not _always_ going to be the case
+        mono_wave.setframerate(int(wave_file.getframerate()/2)) # TODO: Likewise, not always the case
     
-    # Keep track of time required to make the conversion
-    start_time = perf_counter()
+        # Keep track of time required to make the conversion
+        start_time = perf_counter()
  
-    mono_wave_bytes = get_one_channel(wave_file)
+        mono_wave_bytes = get_one_channel(wave_file, channel_num)
 
-    mono_wave.writeframesraw(mono_wave_bytes)
-    mono_wave.close() # done writing to this thing, have to create a Wave_read object later
+        mono_wave.writeframesraw(mono_wave_bytes)
+        mono_wave.close() # done writing to this thing, have to create a Wave_read object later
+    except:
+        os.remove(f'{output_directory}/{mono_wave_file_name}')
+        raise
 
     print("Conversion completed in: ", perf_counter() - start_time, "seconds")
 
     return mono_wave_file_name
 
-def get_one_channel(wave_file: wave.Wave_read) -> bytearray:
+def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
     """Do the actual job of splitting out one channel."""
     mono_wave_bytes = bytearray()
-    channel=wav_channel_reader(wave_file, 1)
+    channel=wav_channel_reader(wave_file, channel_num)
     for data_bytes in channel:
         mono_wave_bytes += data_bytes
     mono_wave_bytes += b'\x01' # TODO Padding byte if M*Nc*Ns is odd, else 0
@@ -66,7 +72,7 @@ class wav_channel_reader:
             channel - passed int idicating which audio channel this obj repr.
 
         Raises:
-            ValueError - Raised if the "channel" parameter indicates a channel that doesn't exist in the passed Wave_read object.
+            InvalidWavChannel - Raised if the "channel" parameter indicates a channel that doesn't exist in the passed Wave_read object.
 
         """
         self.audio_bytes = bytearray(wave_read.readframes(wave_read.getnframes()))
@@ -76,7 +82,7 @@ class wav_channel_reader:
         if(channel in range(0, wave_read.getnchannels())):
             self.channel = channel
         else:
-            raise ValueError(f'There is no channel {channel}.  {wave_read} only contains {wave_read.getnchannels} channels')
+            raise InvalidWaveChannel(f'There is no channel {channel}.  {wave_read} only contains {wave_read.getnchannels()} channels')
 
     def __iter__(self):
         """Yield the next byte from the channel."""
@@ -91,6 +97,11 @@ class wav_channel_reader:
         # Samples are placed end-to-end to form the data. 
         # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
         
-        for index in range(self.channel - 1, len(self.audio_bytes), 8):
+        for index in range(self.channel*8, len(self.audio_bytes), 8):
             mono_sample = self.audio_bytes[int(index):int(index+(self.bytes_per_sample/self.num_channels)+1)]
             yield mono_sample
+
+class InvalidWaveChannel(Exception):
+    """Exception for use with working with wav file channels. Raised in the case a channel that doesn't exist is accessed."""
+    
+    pass
