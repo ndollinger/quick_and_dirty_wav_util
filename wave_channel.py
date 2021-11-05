@@ -1,12 +1,11 @@
-"""Classes and Method to evaluate and manipulate the channels of wave files.
+"""Functions to evaluate and manipulate the channels of wave files.
 
+Functions:
+    convert_wave_to_mono: creates a new wave file with just one channel out of the passed wave.Wave_read files
+    get_one_channel: returns one channel of audio bytes
+    read_wave_channel: return an iterator to the bytes of the audio frames in the wav file
 Classes:
-    wav_channel_reader
-
-Methods:
-    convert_wave_to_mono
-    get_one_channel
-
+    InvalidWaveChannel: Exception thrown when an attempt is made to access a channel the doesn't exist in the wave.Wave_read object
 """
 
 import wave
@@ -14,7 +13,18 @@ from time import perf_counter
 import os
 
 def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str, channel_num: int):
-    """convert_wav_to_mono."""
+    """
+    Create a new wave file on disk from one of the channels of the passed Wave_read object.
+
+    Args:
+        wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
+        output_directory: The directory on disk where the newly created mono wave file will be stored.
+        mono_wave_file_name: name to use for the newly created mono wave file
+        channel_num: the channel id of the channel that will be read into the new wave file
+
+    Returns:
+        The name of the newly created wave file # TODO this doesn't really make sense
+    """
     # only going to keep one of the channels
 
     print(f'There are {wave_file.getsampwidth()} bytes per sample in this wave')
@@ -47,59 +57,53 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
     return mono_wave_file_name
 
 def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
-    """Do the actual job of splitting out one channel."""
+    """
+    Split out one channel of audio data from the passed Wave_read object
+
+    Args:
+        wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
+        channel_num: Which channel's bytes to return
+
+    Returns:
+        A bytearray containing the audio frams for one channel of the passed Wave_read object
+    """
     mono_wave_bytes = bytearray()
-    channel=wav_channel_reader(wave_file, channel_num)
-    for data_bytes in channel:
+    for data_bytes in read_wave_channel(wave_file, channel_num):
         mono_wave_bytes += data_bytes
     mono_wave_bytes += b'\x01' # TODO Padding byte if M*Nc*Ns is odd, else 0
     return mono_wave_bytes 
 
-class wav_channel_reader:
-    """Wave Channel Reader.
-
-    Act as an interface to the sound bytes of a single channel of a wav file.    
-
-    Methods:
-        __iter__ - allows for iteration through the bytes of the channel of the wave file.
+def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     """
+    Generator that Yields the next byte from channel "read_channel_index" of the passed Wave_read object
+
+    Args:
+        wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
+        read_channel_index: Which channel's bytes to return
+
+    Yields:
+        bytes of one channel out of the entire sample
+    """
+    # Wav file references
+    # https://wavefilegem.com/how_wave_files_work.html
+
+    # The data is the individual samples. An individual sample is the bit size times the number of channels. 
+    # For example, a monaural (single channel), eight bit recording has an individual sample size of 8 bits. 
+    # A monaural sixteen-bit recording has an individual sample size of 16 bits. 
+    # A stereo sixteen-bit recording has an individual sample size of 32 bits.
+
+    # Samples are placed end-to-end to form the data. 
+    # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
     
-    def __init__(self, wave_read: wave.Wave_read, channel):
-        """Create a new wave_channel_reader.
-        
-        Parameters:
-            wave_read - a Wave_read object
-            channel - passed int idicating which audio channel this obj repr.
+    if(read_channel_index not in range(0, wave_file.getnchannels())):
+            raise InvalidWaveChannel(f'There is no channel {read_channel_index}.  {wave_file} only contains {wave_file.getnchannels()} channels')
 
-        Raises:
-            InvalidWavChannel - Raised if the "channel" parameter indicates a channel that doesn't exist in the passed Wave_read object.
 
-        """
-        self.audio_bytes = bytearray(wave_read.readframes(wave_read.getnframes()))
-        self.num_channels = wave_read.getnchannels()
-        self.bytes_per_sample = wave_read.getsampwidth()
-        self.channel = channel # Set which of the channels in the wave is going to be _this_ channel
-        if(channel in range(0, wave_read.getnchannels())):
-            self.channel = channel
-        else:
-            raise InvalidWaveChannel(f'There is no channel {channel}.  {wave_read} only contains {wave_read.getnchannels()} channels')
+    audio_bytes = bytearray(wave_file.readframes(wave_file.getnframes()))
 
-    def __iter__(self):
-        """Yield the next byte from the channel."""
-        # Wav file references
-        # https://wavefilegem.com/how_wave_files_work.html
-
-        # The data is the individual samples. An individual sample is the bit size times the number of channels. 
-        # For example, a monaural (single channel), eight bit recording has an individual sample size of 8 bits. 
-        # A monaural sixteen-bit recording has an individual sample size of 16 bits. 
-        # A stereo sixteen-bit recording has an individual sample size of 32 bits.
-
-        # Samples are placed end-to-end to form the data. 
-        # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
-        
-        for index in range(self.channel*8, len(self.audio_bytes), 8):
-            mono_sample = self.audio_bytes[int(index):int(index+(self.bytes_per_sample/self.num_channels)+1)]
-            yield mono_sample
+    for index in range(read_channel_index*8, len(audio_bytes), 8):
+        mono_sample = audio_bytes[int(index):int(index+(wave_file.getsampwidth()/wave_file.getnchannels())+1)]
+        yield mono_sample
 
 class InvalidWaveChannel(Exception):
     """Exception for use with working with wav file channels. Raised in the case a channel that doesn't exist is accessed."""
