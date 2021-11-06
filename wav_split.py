@@ -12,7 +12,7 @@ import wave
 import uuid
 import argparse
 import os
-from wave_channel import wav_channel_reader, convert_wav_to_mono
+from wave_channel import convert_wav_to_mono
 
 def main(wav_file_name, output_directory, output_file_name, channel):
     """Split the Wave."""
