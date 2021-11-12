@@ -54,7 +54,7 @@ if __name__ == '__main__':
                        default=default_output_dir)
     parser.add_argument("--output_file_name",
                         "-o",
-                        help="File name of the newly created mono wave file",
+                        help="File name of the newly created mono wave file.  If not supplied, the output file is the input file name with the channel appended to the file name.",
                         type=str)
     parser.add_argument("--channel",
                        help="which channel to keep",
