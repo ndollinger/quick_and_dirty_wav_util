@@ -21,7 +21,8 @@ optional arguments:
   --output_directory OUTPUT_DIRECTORY
                         Directory where split wave files end up
   --output_file_name OUTPUT_FILE_NAME, -o OUTPUT_FILE_NAME
-                        File name of the newly created mono wave file
+                        File name of the newly created mono wave file. If not supplied, the output file is the
+                        input file name with the channel appended to the file name.
   --channel CHANNEL     which channel to keep
 ```
 
