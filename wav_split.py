@@ -59,7 +59,7 @@ if __name__ == '__main__':
     parser.add_argument("--channel",
                        help="which channel to keep",
                        type=int, 
-                       default=1)
+                       default=0)
     args = parser.parse_args()
     create_output_dir(args.output_directory)
     output_file_name = args.output_file_name or f'{os.path.basename(args.wav_file).split(".wav")[0]}_channel_{args.channel}.wav'

@@ -38,8 +38,6 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
         params = wave_file.getparams()
         mono_wave.setparams(params)
         mono_wave.setnchannels(1)
-        mono_wave.setsampwidth(2) # TODO: this is not _always_ going to be the case
-        mono_wave.setframerate(int(wave_file.getframerate()/2)) # TODO: Likewise, not always the case
     
         # Keep track of time required to make the conversion
         start_time = perf_counter()
@@ -84,6 +82,11 @@ def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     Yields:
         bytes of one channel out of the entire sample
     """
+    if(read_channel_index not in range(0, wave_file.getnchannels())):
+        raise InvalidWaveChannel(f'There is no channel {read_channel_index}.  {wave_file} only contains {wave_file.getnchannels()} channels')
+    
+    audio_bytes = bytearray(wave_file.readframes(wave_file.getnframes()))
+
     # Wav file references
     # https://wavefilegem.com/how_wave_files_work.html
 
@@ -93,16 +96,12 @@ def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     # A stereo sixteen-bit recording has an individual sample size of 32 bits.
 
     # Samples are placed end-to-end to form the data. 
-    # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
-    
-    if(read_channel_index not in range(0, wave_file.getnchannels())):
-            raise InvalidWaveChannel(f'There is no channel {read_channel_index}.  {wave_file} only contains {wave_file.getnchannels()} channels')
+    # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.    
+    size_of_one_sample_from_all_channels = wave_file.getsampwidth()*wave_file.getnchannels()
 
-
-    audio_bytes = bytearray(wave_file.readframes(wave_file.getnframes()))
-
-    for index in range(read_channel_index*8, len(audio_bytes), 8):
-        mono_sample = audio_bytes[int(index):int(index+(wave_file.getsampwidth()/wave_file.getnchannels())+1)]
+    for index in range(read_channel_index*size_of_one_sample_from_all_channels, len(audio_bytes), size_of_one_sample_from_all_channels):
+        #mono_sample = audio_bytes[int(index):int(index+(wave_file.getsampwidth()/wave_file.getnchannels())+1)]
+        mono_sample = audio_bytes[int(index):int(index+wave_file.getsampwidth())]
         yield mono_sample
 
 class InvalidWaveChannel(Exception):
