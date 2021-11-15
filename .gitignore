@@ -129,8 +129,7 @@ dmypy.json
 .pyre/
 
 # .vscode json
-.vscode/settings.json
-.vscode/launch.json
+.vscode/*
 
 # generated wave files
 /generated_waves
