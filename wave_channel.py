@@ -96,12 +96,15 @@ def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     # A stereo sixteen-bit recording has an individual sample size of 32 bits.
 
     # Samples are placed end-to-end to form the data. 
-    # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.    
+    # So, for example, if you have four samples (s1, s2, s3, s4) then the data would look like: s1s2s3s4.
+    # Multiple channels is like |s1ch1s1ch2|s2ch1s2ch2|s3ch1s3ch2|...    
+    # therefore, the size of all the samples for all channels is the step size to step between the groups of samples
     size_of_one_sample_from_all_channels = wave_file.getsampwidth()*wave_file.getnchannels()
+    # if we want channel 0, start at index 0, otherwise offset the start to align with the channel wanted
+    first_index = read_channel_index*wave_file.getsampwidth()
 
-    for index in range(read_channel_index*size_of_one_sample_from_all_channels, len(audio_bytes), size_of_one_sample_from_all_channels):
-        #mono_sample = audio_bytes[int(index):int(index+(wave_file.getsampwidth()/wave_file.getnchannels())+1)]
-        mono_sample = audio_bytes[int(index):int(index+wave_file.getsampwidth())]
+    for index in range(first_index, len(audio_bytes), size_of_one_sample_from_all_channels):
+        mono_sample = audio_bytes[index:index+wave_file.getsampwidth()]
         yield mono_sample
 
 class InvalidWaveChannel(Exception):
