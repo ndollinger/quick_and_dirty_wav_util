@@ -8,6 +8,7 @@ Classes:
     InvalidWaveChannel: Exception thrown when an attempt is made to access a channel the doesn't exist in the wave.Wave_read object
 """
 
+from typing import Generator
 import wave
 from time import perf_counter
 import os
@@ -57,7 +58,7 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
 
 def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
     """
-    Split out one channel of audio data from the passed Wave_read object
+    Split out one channel of audio data from the passed Wave_read object.
 
     Args:
         wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
@@ -74,7 +75,7 @@ def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
 
 def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     """
-    Generator that Yields the next byte from channel "read_channel_index" of the passed Wave_read object
+    Yield the next() byte from channel "read_channel_index" of the passed Wave_read object.
 
     Args:
         wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
