@@ -8,11 +8,12 @@ Classes:
     InvalidWaveChannel: Exception thrown when an attempt is made to access a channel the doesn't exist in the wave.Wave_read object
 """
 
+from typing import Generator
 import wave
 from time import perf_counter
 import os
 
-def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str, channel_num: int):
+def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wave_file_name: str, channel_num: int, verbose: int):
     """
     Create a new wave file on disk from one of the channels of the passed Wave_read object.
 
@@ -21,14 +22,15 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
         output_directory: The directory on disk where the newly created mono wave file will be stored.
         mono_wave_file_name: name to use for the newly created mono wave file
         channel_num: the channel id of the channel that will be read into the new wave file
+        verbose: if set, output additional information about the files and split time
 
     Returns:
         The name of the newly created wave file # TODO this doesn't really make sense
     """
     # only going to keep one of the channels
-
-    print(f'There are {wave_file.getsampwidth()} bytes per sample in this wave')
-    print(f'The sampling frequency is {wave_file.getframerate()}')
+    if verbose:
+        print(f'There are {wave_file.getsampwidth()} bytes per sample in this wave')
+        print(f'The sampling frequency is {wave_file.getframerate()}')
 
     # TODO: Make it configurable which channel to keep
 
@@ -50,13 +52,13 @@ def convert_wav_to_mono(wave_file:wave.Wave_read, output_directory: str, mono_wa
         os.remove(f'{output_directory}/{mono_wave_file_name}')
         raise
 
-    print("Conversion completed in: ", perf_counter() - start_time, "seconds")
+    if verbose: print("Conversion completed in: ", perf_counter() - start_time, "seconds")
 
     return mono_wave_file_name
 
 def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
     """
-    Split out one channel of audio data from the passed Wave_read object
+    Split out one channel of audio data from the passed Wave_read object.
 
     Args:
         wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
@@ -73,7 +75,7 @@ def get_one_channel(wave_file: wave.Wave_read, channel_num=1) -> bytearray:
 
 def read_wave_channel(wave_file:wave.Wave_read, read_channel_index:int):
     """
-    Generator that Yields the next byte from channel "read_channel_index" of the passed Wave_read object
+    Yield the next() byte from channel "read_channel_index" of the passed Wave_read object.
 
     Args:
         wave_file: a wave.Wave_read object that will have one audio channel read into a new file.  This object will not be manipulated
